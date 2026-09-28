@@ -4,6 +4,13 @@
   var line = document.getElementById('line');
   var copy = document.getElementById('copy');
   if (line) line.href = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url);
+  var th = document.getElementById('threads');
+  if (th) {
+    var h1 = document.querySelector('h1');
+    var title = h1 ? h1.innerText.replace(/\s+/g, '') : document.title;
+    th.href = 'https://www.threads.com/intent/post?text=' + encodeURIComponent(title)
+            + '&url=' + encodeURIComponent(url);
+  }
   function done(){ if(!t) return; t.classList.add('on'); setTimeout(function(){ t.classList.remove('on'); }, 1600); }
   function fallback(){
     var i = document.createElement('input');
@@ -77,4 +84,60 @@
       }
     });
   })(chips[i]);}
+})();
+
+/* ---- lightbox (tap to enlarge) ---- */
+(function(){
+  var track=document.getElementById('track'); if(!track) return;
+  var imgs=track.querySelectorAll('img'), n=imgs.length;
+  var lb=document.createElement('div'); lb.className='lb';
+  var inner='<div class="lb-track" id="lbTrack">';
+  for(var i=0;i<n;i++) inner+='<img src="'+imgs[i].getAttribute('src')+'" alt="">';
+  inner+='</div><button class="lb-close" id="lbClose" aria-label="關閉">✕</button>'
+       +'<button class="lb-nav lb-prev" id="lbPrev" aria-label="上一張">‹</button>'
+       +'<button class="lb-nav lb-next" id="lbNext" aria-label="下一張">›</button>'
+       +'<div class="lb-count" id="lbCount"></div>';
+  lb.innerHTML=inner; document.body.appendChild(lb);
+  var lt=lb.querySelector('#lbTrack'), lc=lb.querySelector('#lbCount');
+  var lp=lb.querySelector('#lbPrev'), ln=lb.querySelector('#lbNext');
+  var k=0, open=false;
+  function paint(){
+    lc.textContent=(k+1)+' / '+n;
+    lp.disabled=(k===0); ln.disabled=(k===n-1);
+  }
+  function jump(i,smooth){
+    k=Math.max(0,Math.min(n-1,i));
+    lt.scrollTo({left:k*lt.clientWidth,behavior:smooth?'smooth':'auto'});
+    paint();
+  }
+  function show(i){
+    open=true; lb.classList.add('on'); document.body.classList.add('noscroll');
+    setTimeout(function(){jump(i,false);},10);
+  }
+  function hide(){
+    open=false; lb.classList.remove('on'); document.body.classList.remove('noscroll');
+    track.scrollTo({left:k*track.clientWidth,behavior:'auto'});
+  }
+  for(var i=0;i<n;i++){(function(x){
+    imgs[x].addEventListener('click',function(){show(x);});
+  })(i);}
+  lb.querySelector('#lbClose').addEventListener('click',hide);
+  lt.addEventListener('click',function(e){ if(e.target.tagName==='IMG') hide(); });
+  lp.addEventListener('click',function(){jump(k-1,true);});
+  ln.addEventListener('click',function(){jump(k+1,true);});
+  var tm=null;
+  lt.addEventListener('scroll',function(){
+    if(tm) clearTimeout(tm);
+    tm=setTimeout(function(){
+      var i=Math.round(lt.scrollLeft/lt.clientWidth);
+      if(i!==k){k=i;paint();}
+    },90);
+  });
+  document.addEventListener('keydown',function(e){
+    if(!open) return;
+    if(e.key==='Escape') hide();
+    if(e.key==='ArrowLeft') jump(k-1,true);
+    if(e.key==='ArrowRight') jump(k+1,true);
+  });
+  paint();
 })();
